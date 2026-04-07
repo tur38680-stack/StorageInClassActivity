@@ -14,10 +14,13 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.squareup.picasso.Picasso
 import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileOutputStream
+import java.io.FileReader
+import java.io.IOException
 
-// TODO (1: Fix any bugs)
-// TODO (2: Add function saveComic(...) to save comic info when downloaded
-// TODO (3: Automatically load previously saved comic when app starts)
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +29,11 @@ class MainActivity : AppCompatActivity() {
     lateinit var descriptionTextView: TextView
     lateinit var numberEditText: EditText
     lateinit var showButton: Button
+
+
+    private val internalFilename = "my_file"
+    lateinit var file: File
+
     lateinit var comicImageView: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,14 +52,35 @@ class MainActivity : AppCompatActivity() {
             downloadComic(numberEditText.text.toString())
         }
 
+        file = File(filesDir, internalFilename)
+
+        if ( file.exists()) {
+            try {
+                val br = BufferedReader(FileReader(file))
+                val text = StringBuilder()
+                var line: String?
+                while (br.readLine().also { line = it } != null) {
+                    text.append(line)
+                }
+                br.close()
+                showComic(JSONObject(text.toString()))
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
     }
+
+
 
     // Fetches comic from web as JSONObject
     private fun downloadComic (comicId: String) {
         val url = "https://xkcd.com/$comicId/info.0.json"
         requestQueue.add (
             JsonObjectRequest(url
-                , {showComic(it)}
+                , {
+                    saveComic(it)
+                    showComic(it)}
                 , {}
             )
         )
@@ -66,8 +95,17 @@ class MainActivity : AppCompatActivity() {
 
     // Implement this function
     private fun saveComic(comicObject: JSONObject) {
+        try {
+            val outputStream = FileOutputStream(file)
+            outputStream.write(comicObject.toString().toByteArray())
+            outputStream.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
     }
+
+
 
 
 }
